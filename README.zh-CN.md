@@ -1,15 +1,14 @@
 <div align="center">
 
-# opencode2dsh
+# opencode2dsh-improve
 
 **在 DSH（DeepSeek Harness）里原生使用 OpenCode Zen 的免费匿名模型。**
 
-无需 API Key。无需注册。无需额外进程。
+无需 API Key。无需注册。免费通道由一个受管理的本地运行时驱动。
 
-[![npm](https://img.shields.io/npm/v/@opencode2dsh%2Fdsh-plugin)](https://www.npmjs.com/package/@opencode2dsh/dsh-plugin)
-[![license](https://img.shields.io/npm/l/@opencode2dsh%2Fdsh-plugin)](https://github.com/FishBottle7/opencode2dsh/blob/master/LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-blue)](https://github.com/wozhenming/opencode2dsh-improve/blob/main/LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](https://nodejs.org)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-blue)](https://github.com/FishBottle7/opencode2dsh)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-blue)](https://github.com/wozhenming/opencode2dsh-improve)
 
 [English](README.md) | 简体中文
 
@@ -86,28 +85,30 @@ DSH 会话 → ZenAdapter → 回环 shim → 隔离的 `opencode serve` → Zen
 
 ## 安装
 
-**从插件市场安装**（推荐，收录后可用）：在 DSH 里打开 **设置 → 插件市场**，
-搜索 `opencode2dsh`，一键安装。
-
-**从 npm 安装**：
-
-```sh
-dsh plugin --profile web add @opencode2dsh/dsh-plugin
-```
-
-**从源码安装**（自行打包）：
+**从本仓库安装（本分支推荐）**——在 DSH 打开 **设置 → 插件**，安装框输入
+`github:wozhenming/opencode2dsh-improve`（或
+`https://github.com/wozhenming/opencode2dsh-improve`）；终端里也可以：
 
 ```sh
-git clone https://github.com/FishBottle7/opencode2dsh.git
-cd opencode2dsh/packages/plugin
-pnpm install && pnpm pack
-dsh plugin --profile web add ./opencode2dsh-dsh-plugin-<version>.tgz
+dsh plugin --profile web add github:wozhenming/opencode2dsh-improve
 ```
 
-**验证**：重启 `dsh web`，打开模型选择器，在 **opencode2dsh** 分组里选模型即可。
+无需构建：本仓库直接携带构建好的 `lib/`，没有 `prepare` 脚本，git 安装
+原样使用。安装后的包名是 `opencode2dsh-improve`；插件页条目与模型分组名
+的关系见上文"本仓库的改进"。
+
+**上游发行版（npm）**——`dsh plugin --profile web add
+@opencode2dsh/dsh-plugin` 装的是 FishBottle7 的发行版，不是本分支；插件
+市场里的 `opencode2dsh` 条目就是那个上游版本，不含委托通道与实时流式。
+
+**验证**：重启 DSH，打开模型选择器，在 **opencode2dsh** 分组里选模型即可
+（本分支不改 provider id）。
 
 需要 DSH（DeepSeek Harness）0.1.7 及以上、带 web profile（IP 池设置页依赖 0.1.7
-的插件页契约）；Node.js ≥ 20（DSH 能跑就满足）；出站 HTTPS 需可达 `opencode.ai` 与 `models.dev`。
+的插件页契约）；Node.js ≥ 20（DSH 能跑就满足）；出站 HTTPS 需可达 `opencode.ai`
+与 `models.dev`；委托通道首次运行还需可达 `registry.npmjs.org` 或 `github.com`，
+用于下载并校验受管的 `opencode` 运行时（缓存在 `~/.opencode2dsh/delegate`，
+之后复用）。
 
 ## 配置
 
@@ -194,6 +195,9 @@ https://opencode.ai/zen/v1        ← Authorization: Bearer public
 | 连接 `127.0.0.1:*` 报错 | 残留的 sidecar 路由遮蔽了 adapter；插件 ≥ 0.2.1 启动时会自动清理。 |
 | 安装时报 `ERR_PNPM_IGNORED_BUILDS` | `pi-ai` 的传递依赖（`@google/genai`、`protobufjs`）带构建脚本，运行时并不需要。在插件市场里按提示选择允许/拒绝，或在 profile 的 `pnpm-workspace.yaml` 的 `allowBuilds:` 下把这两项设为 `false`。 |
 
+注：表中提到的版本号（`0.3.x`）指上游发行线；本分支基于上游 0.3.12
+（清单版本 `0.4.0`），包含表中全部 0.3.x 修复，并叠加委托通道与实时流式。
+
 ## 安全性
 
 - 不涉及任何机密：匿名通道的 Key 就是字面量 `public`；插件不存储任何东西，也没有任何遥测。
@@ -202,17 +206,14 @@ https://opencode.ai/zen/v1        ← Authorization: Bearer public
 
 ## 开发
 
-```sh
-git clone https://github.com/FishBottle7/opencode2dsh.git
-cd opencode2dsh/packages/plugin
-pnpm install
-pnpm typecheck && pnpm test
-pnpm build                    # 打包到 lib/
-```
+本仓库只携带构建产物（`lib/`）——没有源码树、没有构建步骤，git 安装原样
+使用 `lib/`。本分支的改动位于 `lib/delegate/`：委托通道（`index.js`、
+`runtime.js`、`backend.js`、`shim.js`、`handoff.js`）与实时流式桥
+（`stream.js`，以及 `backend.js`/`shim.js` 里的事件转发）。
 
-旧版 Go sidecar 在 `legacy/agent`（`go test ./...`）。架构说明与移植记录见 `docs/`。
-
-发布：在 `packages/plugin` 执行 `pnpm pack`（prepack 会构建并同步文档）。
+源码开发——`pnpm typecheck`、`pnpm test`、`pnpm build`、`legacy/agent`
+下的旧版 Go sidecar 以及移植文档——都在上游仓库：
+[FishBottle7/opencode2dsh](https://github.com/FishBottle7/opencode2dsh)。
 
 ## 致谢
 

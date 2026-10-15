@@ -1,15 +1,14 @@
 <div align="center">
 
-# opencode2dsh
+# opencode2dsh-improve
 
 **Free OpenCode Zen models, natively inside DSH (DeepSeek Harness).**
 
-No API key. No registration. No extra process.
+No API key. No registration. A managed local runtime drives the free lane.
 
-[![npm](https://img.shields.io/npm/v/@opencode2dsh%2Fdsh-plugin)](https://www.npmjs.com/package/@opencode2dsh/dsh-plugin)
-[![license](https://img.shields.io/npm/l/@opencode2dsh%2Fdsh-plugin)](https://github.com/FishBottle7/opencode2dsh/blob/master/LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-blue)](https://github.com/wozhenming/opencode2dsh-improve/blob/main/LICENSE)
 [![node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)](https://nodejs.org)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-blue)](https://github.com/FishBottle7/opencode2dsh)
+[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-blue)](https://github.com/wozhenming/opencode2dsh-improve)
 
 English | [简体中文](README.zh-CN.md)
 
@@ -92,31 +91,33 @@ both would collide (same provider route and delegate runtime).
 
 ## Install
 
-**From the plugin market** (recommended, once this repo is listed there):
-in DSH open **Settings → Plugin Market**, search `opencode2dsh`, one-click
-install.
-
-**From npm**:
+**From this repository (recommended for this fork)** — in DSH open
+**Settings → Plugins** and enter `github:wozhenming/opencode2dsh-improve`
+(or `https://github.com/wozhenming/opencode2dsh-improve`); from a terminal:
 
 ```sh
-dsh plugin --profile web add @opencode2dsh/dsh-plugin
+dsh plugin --profile web add github:wozhenming/opencode2dsh-improve
 ```
 
-**From source** (build the tarball yourself):
+No build step: this repository ships the built `lib/` and has no `prepare`
+script, so a git install consumes it as-is. Installing writes the plugin as
+`opencode2dsh-improve`; the Plugins page row and the model-picker provider are
+described in the fork section above.
 
-```sh
-git clone https://github.com/FishBottle7/opencode2dsh.git
-cd opencode2dsh/packages/plugin
-pnpm install && pnpm pack
-dsh plugin --profile web add ./opencode2dsh-dsh-plugin-<version>.tgz
-```
+**Upstream release (npm)** — `dsh plugin --profile web add
+@opencode2dsh/dsh-plugin` installs FishBottle7's published build, not this
+fork. The plugin market's `opencode2dsh` entry is that same upstream release;
+it does not carry the delegate lane or live streaming.
 
-**Verify**: restart `dsh web`, open the model picker, and pick a model from
-the **opencode2dsh** group.
+**Verify**: restart DSH, open the model picker, and pick a model from the
+**opencode2dsh** group (the provider id is unchanged by this fork).
 
 Requires DSH (DeepSeek Harness) 0.1.7 or newer with a web profile (the IP 池
 settings page rides the 0.1.7 Plugins page contract); Node.js ≥ 20 (already
-present if DSH runs); outbound HTTPS to `opencode.ai` and `models.dev`.
+present if DSH runs); outbound HTTPS to `opencode.ai` and `models.dev`, plus —
+on the delegate lane's first run — `registry.npmjs.org` or `github.com` to
+fetch and verify the managed `opencode` runtime (cached under
+`~/.opencode2dsh/delegate` and reused afterwards).
 
 ## Configuration
 
@@ -208,6 +209,10 @@ The plugin writes a health snapshot after every refresh round:
 | Connection error to `127.0.0.1:*` | A stale sidecar route shadows the adapter; plugin ≥ 0.2.1 removes it at startup. |
 | Install fails with `ERR_PNPM_IGNORED_BUILDS` | A transitive dependency of `pi-ai` (`@google/genai`, `protobufjs`) has build scripts that are not needed at runtime. Approve-or-decline them via the plugin market, or set both to `false` under `allowBuilds:` in the profile's `pnpm-workspace.yaml`. |
 
+Note: versions named in the table (`0.3.x`) refer to upstream releases; this
+fork is based on upstream 0.3.12 (manifest version `0.4.0`) and ships every
+0.3.x fix listed above, plus the delegate lane and live streaming.
+
 ## Security
 
 - No secrets involved: the anonymous lane's key is the literal string `public`; nothing is stored, nothing telemetry.
@@ -216,18 +221,15 @@ The plugin writes a health snapshot after every refresh round:
 
 ## Development
 
-```sh
-git clone https://github.com/FishBottle7/opencode2dsh.git
-cd opencode2dsh/packages/plugin
-pnpm install
-pnpm typecheck && pnpm test
-pnpm build                    # bundle to lib/
-```
+This repository carries the built plugin (`lib/` only) — no source tree and no
+build step; git installs consume `lib/` as-is. The fork's changes live in
+`lib/delegate/`: the delegate lane (`index.js`, `runtime.js`, `backend.js`,
+`shim.js`, `handoff.js`) and the live-streaming bridge (`stream.js` plus the
+event forwarding in `backend.js`/`shim.js`).
 
-The legacy Go sidecar lives in `legacy/agent` (`go test ./...`). Architecture
-notes and the porting record live in `docs/`.
-
-Releasing: `pnpm pack` in `packages/plugin` (prepack builds and syncs docs).
+Source development — `pnpm typecheck`, `pnpm test`, `pnpm build`, the legacy Go
+sidecar under `legacy/agent`, and the porting docs — lives in the upstream
+tree: [FishBottle7/opencode2dsh](https://github.com/FishBottle7/opencode2dsh).
 
 ## Acknowledgments
 
