@@ -27,10 +27,58 @@ CLI (same user agent, same correlation headers), and the model catalog stays
 fresh through a three-tier fallback chain. There is nothing to log into and
 nothing to host.
 
+## This fork: delegated runtime & live streaming
+
+This repository (`wozhenming/opencode2dsh-improve`) is a fork of
+[opencode2dsh](https://github.com/FishBottle7/opencode2dsh) that keeps the
+plugin usable after Zen started refusing free-tier requests from anything that
+is not a genuine OpenCode runtime (`403 FreeTierError`), and that restores
+real streaming — including the model's reasoning.
+
+```
+DSH session → ZenAdapter → loopback shim → isolated `opencode serve` → Zen free models
+```
+
+**Improvements over upstream**
+
+- **403 fixed by delegating to a real runtime** — a managed, isolated
+  `opencode serve` (official `opencode-ai` binary, version-checked,
+  auto-discovered or downloaded) runs inside its own XDG data directory
+  (`~/.opencode2dsh/delegate`) and is exposed to the unchanged adapter through a
+  loopback OpenAI-compatible shim. Zen sees genuine OpenCode traffic, so the
+  free models work again. The lane also seeds your Zen credentials when
+  present, absorbs the one-time refusal a virgin data directory gets on its
+  first inference (warm-up, plus a single runtime restart), caps runtime memory
+  (`GOMEMLIMIT=96MiB`, `GOGC=30`) and trims its Windows working set.
+  On by default; set `delegate: false` to return to the direct lane.
+- **Live streaming, thinking included** — upstream buffered the whole turn and
+  emitted one SSE burst with the final text only. This fork forwards the
+  runtime's event stream as it arrives: reasoning becomes `reasoning_content`
+  (so DSH renders a live thinking block), the answer is extracted incrementally
+  from the JSON envelope while the model writes it, and tool calls are still
+  emitted only after validation. Correction retries continue the same stream,
+  and the user-message text the runtime echoes back is filtered out.
+
+**Depended projects**
+
+| Project | Role here | License |
+| --- | --- | --- |
+| [FishBottle7/opencode2dsh](https://github.com/FishBottle7/opencode2dsh) | Upstream plugin this repository forks (adapter, catalog, disguise) | MIT © FishBottle7 |
+| [XDTrees/dsh-opencode-xdbridge](https://github.com/XDTrees/dsh-opencode-xdbridge) | Runtime/shim/protocol core vendored under `lib/delegate/` — see `lib/delegate/LICENSE-xdbridge` | MIT © XDTrees |
+| [OpenCode](https://opencode.ai) (`opencode-ai`) | The real runtime the delegate lane drives | MIT |
+| [@earendil-works/pi-ai](https://www.npmjs.com/package/@earendil-works/pi-ai) | Wire layer used by the adapter | MIT © Mario Zechner |
+| [opencode2api](https://github.com/jasonxu114514/opencode2api) | Origin of the anonymous-lane catalog and disguise details in upstream | — |
+| [DeepSeek Harness](https://www.npmjs.com/package/@deepseek-ai/dsh) · [dsh-market](https://github.com/dsh-market/dsh-market) | Host platform and plugin market | — |
+
+**Install from this fork** — in DSH open **Settings → Plugins** and enter
+`github:wozhenming/opencode2dsh-improve` (or
+`https://github.com/wozhenming/opencode2dsh-improve`); a pinned commit works
+too: `github:wozhenming/opencode2dsh-improve#<sha>`.
+
 ## Highlights
 
 - **Zero credential, zero setup** — the anonymous lane needs no key; install, restart, chat
-- **Native adapter, no sidecar** — one npm package, no child process, no binary, no local port (the legacy Go sidecar is not part of the published package; see `legacy/`)
+- **Native adapter, no sidecar** — one npm package, no child process, no binary, no local port (the legacy Go sidecar is not part of the published package; see `legacy/`). This fork's default lane adds a managed, isolated `opencode serve` (see above); set `delegate: false` for the upstream direct lane.
 - **CLI-identical disguise** — requests carry the OpenCode CLI user agent and its session/request/project header set, derived per conversation
 - **Selectable thinking levels** — reasoning-capable free models expose an effort picker in DSH's model selector (declared ladders where the model metadata provides them, Off/Minimal/Low/Medium/High otherwise); Responses-only `muse-spark-*` models expose only upstream-supported effort levels, and no selection keeps the provider default
 - **Image input where it is declared** — image attachments are accepted for every model whose [models.dev](https://models.dev) entry lists `image` in `modalities.input`, and refused for the ones that declare `text` only; models.dev being silent falls back to the live-verified vision family
@@ -88,6 +136,9 @@ Defaults work out of the box. Override via the profile's `cordis.patch.yml`:
 | `agentArgs` | — | Sidecar only: extra CLI args for the agent. |
 | `restartDelayMs` / `restartMaxDelayMs` / `maxConsecutiveCrashes` | `1000` / `60000` / `5` | Sidecar only: restart backoff and circuit breaker. |
 | `firstEventMs` / `bodyIdleMs` / `responsesBodyIdleMs` | `30000` / `120000` / `300000` | Adapter only, plugin 0.3.7+: stream-liveness watchdogs, in ms (integers from `1` to `600000`). Time to the first stream event, mid-response body silence, and the body-idle floor for Responses models (`muse-spark-*`). Increase `firstEventMs` for slow cold starts. Unset keeps the defaults; restart DSH after editing. |
+| `delegate` | `true` | This fork only: run the managed, isolated OpenCode runtime (the fix for the free-tier 403) instead of the upstream direct lane. |
+| `delegateDataDir` | `~/.opencode2dsh/delegate` | This fork only: data directory of the managed runtime, shim and logs. |
+| `delegateBinaryPath` / `delegateRuntimeVersion` | auto-resolved / latest known | This fork only: point at a specific `opencode` binary, or pin a runtime version. |
 
 ## How it works
 
@@ -142,7 +193,7 @@ The plugin writes a health snapshot after every refresh round:
 
 | Symptom | Likely cause & fix |
 | --- | --- |
-| `403 FreeTierError` / "OpenCode's free tier can only be used from within OpenCode" | The upstream restricts free-tier clients. The plugin preserves the explanation instead of reporting an invalid API key. Use the supported OpenCode client or an official API service. |
+| `403 FreeTierError` / "OpenCode's free tier can only be used from within OpenCode" | Upstream only lets a genuine OpenCode runtime use the free lane. **This fork fixes it by default**: the delegate lane runs a real isolated `opencode serve`, so this error should no longer appear. If it still does, check `~/.opencode2dsh/delegate/opencode.log`; with `delegate: false` the upstream explanation applies (use the supported OpenCode client or an official API service). |
 | Boot screen shows `Failed to load plugins … list slot "plugins.item" requires options.id`, or the IP 池 entry has no configuration page | Your DSH predates the 0.1.7 Plugins page contract. Upgrade DSH to 0.1.7 (latest recommended). On 0.1.6 and older the page never mounts (it is gated on `configForms.whileServed`) — model routing is unaffected. |
 | DSH 0.1.7/0.2 cannot start after plugin installation (`pending … settingsScope`) | Upgrade the plugin to 0.3.5. On DSH 0.2, configure IP pooling through the installed opencode2dsh row on the Plugins page. |
 | Only 3 models | Startup fetch raced your network; retries land within ~1 min. Check `adapter-status.json` for `lastError`. |
@@ -181,7 +232,12 @@ Releasing: `pnpm pack` in `packages/plugin` (prepack builds and syncs docs).
   in `legacy/agent` is a port of its anonymous-lane implementation, and the
   catalog fallback chain and request-disguise details are derived from it.
   This project stands on its shoulders.
-- [OpenCode](https://opencode.ai) — for running the free anonymous Zen lane.
+- [**dsh-opencode-xdbridge**](https://github.com/XDTrees/dsh-opencode-xdbridge) by
+  [@XDTrees](https://github.com/XDTrees) — the delegated-runtime core vendored
+  under `lib/delegate/`; the 403 fix and the live-streaming work in this fork are
+  built on it (MIT).
+- [OpenCode](https://opencode.ai) — for running the free anonymous Zen lane, and
+  for the official runtime binary the delegate lane manages.
 - [@earendil-works/pi-ai](https://www.npmjs.com/package/@earendil-works/pi-ai) — the wire layer used by adapter mode.
 - [DeepSeek Harness](https://www.npmjs.com/package/@deepseek-ai/dsh) and the
   [dsh-market](https://github.com/dsh-market/dsh-market) community.
