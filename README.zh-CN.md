@@ -68,7 +68,10 @@ DSH 会话 → ZenAdapter → 回环 shim → 隔离的 `opencode serve` → Zen
 **从本分支安装**——在 DSH 打开 **设置 → 插件**，安装框输入
 `github:wozhenming/opencode2dsh-improve`（或
 `https://github.com/wozhenming/opencode2dsh-improve`）；也可固定提交：
-`github:wozhenming/opencode2dsh-improve#<sha>`。
+`github:wozhenming/opencode2dsh-improve#<sha>`。安装后的包名与插件页条目为
+`opencode2dsh-improve`；模型选择器里的 provider 仍是 `opencode2dsh`（除非
+改写 `providerId`）。请先卸载上游 `@opencode2dsh/dsh-plugin`——两份同时
+安装会冲突（同一 provider 路由与委托运行时）。
 
 ## 特性
 
@@ -111,8 +114,8 @@ dsh plugin --profile web add ./opencode2dsh-dsh-plugin-<version>.tgz
 默认配置开箱即用。需要覆盖时，编辑 profile 的 `cordis.patch.yml`：
 
 ```yaml
-- id: opencode2dsh
-  name: '@opencode2dsh/dsh-plugin'
+- id: opencode2dsh-improve
+  name: 'opencode2dsh-improve'
   config:
     mode: adapter        # adapter（默认）| sidecar
     providerId: opencode2dsh
@@ -182,7 +185,7 @@ https://opencode.ai/zen/v1        ← Authorization: Bearer public
 | --- | --- |
 | `403 FreeTierError` / "OpenCode's free tier can only be used from within OpenCode" | 上游只允许真正的 OpenCode 运行时使用免费通道。**本分支默认已修复**：委托通道运行真实的隔离 `opencode serve`，该报错不应再出现。若仍出现，查看 `~/.opencode2dsh/delegate/opencode.log`；设置 `delegate: false` 时适用上游说明（请使用上游支持的 OpenCode 客户端或正式 API 服务）。 |
 | 启动页报 `Failed to load plugins … list slot "plugins.item" requires options.id`，或 IP 池条目没有配置页 | DSH 早于 0.1.7 的插件页契约。升级 DSH 到 0.1.7（推荐最新）；页面挂载门控是 `configForms.whileServed`，0.1.6 及更早上整页不出现，模型路由不受影响。 |
-| 安装插件后 DSH 0.1.7/0.2 无法启动，报 `pending … settingsScope` | 更新插件到 0.3.5；DSH 0.2 的 IP 池设置在插件页的 opencode2dsh 条目里。 |
+| 安装插件后 DSH 0.1.7/0.2 无法启动，报 `pending … settingsScope` | 更新插件到 0.3.5；DSH 0.2 的 IP 池设置在插件页的 opencode2dsh-improve 条目里。 |
 | 只有 3 个模型 | 启动时网络未就绪，重试会在约 1 分钟内补齐；看 `adapter-status.json` 里的 `lastError`。 |
 | `lastError: "fetch failed"` 持续出现 | 出站 HTTPS 到 `opencode.ai` 被拦截；检查代理/VPN 规则。 |
 | 对话中报限流错误（`429 … Endpoint is unavailable`） | 匿名通道按 IP 限额，免费模型竞争大。[#51](https://github.com/FishBottle7/opencode2dsh/issues/51) 修复后，插件的 provider 重试策略会静默扛过 429 突发（8 次重试、约 1s→20s 退避、每步最坏约 90s），不再直接抛给用户；仍被打满时可降低思考强度、换一个竞争较小的 `-free` 模型，或在插件设置页开启 IP 池（多出口轮换）。 |

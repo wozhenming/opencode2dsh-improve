@@ -4,6 +4,6 @@
 # generates/persists the local token, and registers itself into llm-pi-ai.
 # Override any option via the config object below (see src/config.ts).
 - insert:
-    - id: opencode2dsh
-      name: '@opencode2dsh/dsh-plugin'
+    - id: opencode2dsh-improve
+      name: 'opencode2dsh-improve'
       config: {}

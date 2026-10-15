@@ -73,7 +73,11 @@ DSH session → ZenAdapter → loopback shim → isolated `opencode serve` → Z
 **Install from this fork** — in DSH open **Settings → Plugins** and enter
 `github:wozhenming/opencode2dsh-improve` (or
 `https://github.com/wozhenming/opencode2dsh-improve`); a pinned commit works
-too: `github:wozhenming/opencode2dsh-improve#<sha>`.
+too: `github:wozhenming/opencode2dsh-improve#<sha>`. It installs as the plugin
+package `opencode2dsh-improve` (that is also the Plugins page entry); the
+model-picker provider id stays `opencode2dsh` unless you override
+`providerId`. Remove upstream `@opencode2dsh/dsh-plugin` first — installing
+both would collide (same provider route and delegate runtime).
 
 ## Highlights
 
@@ -119,8 +123,8 @@ present if DSH runs); outbound HTTPS to `opencode.ai` and `models.dev`.
 Defaults work out of the box. Override via the profile's `cordis.patch.yml`:
 
 ```yaml
-- id: opencode2dsh
-  name: '@opencode2dsh/dsh-plugin'
+- id: opencode2dsh-improve
+  name: 'opencode2dsh-improve'
   config:
     mode: adapter        # adapter (default) | sidecar
     providerId: opencode2dsh
@@ -195,7 +199,7 @@ The plugin writes a health snapshot after every refresh round:
 | --- | --- |
 | `403 FreeTierError` / "OpenCode's free tier can only be used from within OpenCode" | Upstream only lets a genuine OpenCode runtime use the free lane. **This fork fixes it by default**: the delegate lane runs a real isolated `opencode serve`, so this error should no longer appear. If it still does, check `~/.opencode2dsh/delegate/opencode.log`; with `delegate: false` the upstream explanation applies (use the supported OpenCode client or an official API service). |
 | Boot screen shows `Failed to load plugins … list slot "plugins.item" requires options.id`, or the IP 池 entry has no configuration page | Your DSH predates the 0.1.7 Plugins page contract. Upgrade DSH to 0.1.7 (latest recommended). On 0.1.6 and older the page never mounts (it is gated on `configForms.whileServed`) — model routing is unaffected. |
-| DSH 0.1.7/0.2 cannot start after plugin installation (`pending … settingsScope`) | Upgrade the plugin to 0.3.5. On DSH 0.2, configure IP pooling through the installed opencode2dsh row on the Plugins page. |
+| DSH 0.1.7/0.2 cannot start after plugin installation (`pending … settingsScope`) | Upgrade the plugin to 0.3.5. On DSH 0.2, configure IP pooling through the installed opencode2dsh-improve row on the Plugins page. |
 | Only 3 models | Startup fetch raced your network; retries land within ~1 min. Check `adapter-status.json` for `lastError`. |
 | `lastError: "fetch failed"` persisting | Outbound HTTPS to `opencode.ai` blocked; check proxy/VPN rules. |
 | Rate-limit errors in chat (`429 … Endpoint is unavailable`) | The anonymous lane is quota-per-IP and free models are contended. Since the fix for [#51](https://github.com/FishBottle7/opencode2dsh/issues/51) the plugin's provider retry policy rides out 429 bursts silently (8 retries, ~1s→20s backoff, ≈90s worst case per step) instead of surfacing them; when contention still wins, lower the reasoning effort, pick a less contended `-free` model, or enable IP pooling (multi-exit rotation) on the plugin settings page. |

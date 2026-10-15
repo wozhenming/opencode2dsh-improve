@@ -556,7 +556,7 @@ interface PluginContext {
   on?(event: string, listener: (...args: never[]) => unknown): () => void;
   emit?(event: string): unknown;
 }
-declare const name = "opencode2dsh";
+declare const name = "opencode2dsh-improve";
 /**
  * Only `llm` gates this fiber, because adapter mode (the shipped default) uses
  * nothing else: the Zen lane's credential is the literal `'public'`, and the
