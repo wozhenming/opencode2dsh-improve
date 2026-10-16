@@ -150,6 +150,16 @@ virgin directory, and the plugin restarts the runtime and retries by itself).
   GitHub (`BurntSushi/ripgrep`, visible as `downloading ripgrep` in the log).
   That is the second cross-border download; a restricted network stalls there
   the same way, and the log page shows it stuck on `downloading ripgrep`.
+- **"Thinking forever, no output"**: the log page's runtime section carries
+  per-turn progress (`[turn] session created` / `[turn] first delta
+  (reasoning|text)` / `[turn] turn finished: …s, first delta …`). When 45
+  seconds pass without a single character it also prints
+  `模型 45s 内没有产生任何增量（仍在推理、或上游排队/限流）` — i.e. the model is
+  reasoning or upstream is queueing, not a lost request.
+- **Zen rate limits** (`Rate limit exceeded` / HTTP 429): the anonymous free
+  tier limits per exit and per model. The plugin retries twice with backoff
+  (8s, 25s) as long as nothing was produced, then says to switch model or
+  enable the IP pool so it can move to another exit.
 
 ## Configuration
 

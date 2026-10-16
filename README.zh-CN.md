@@ -136,6 +136,14 @@ dsh plugin --profile web add github:wozhenming/opencode2dsh-improve
 - 运行时**首次**启动还会从 GitHub 下载它自己的文件搜索工具
   （`BurntSushi/ripgrep`，日志里会出现 `downloading ripgrep`）。这是第二处跨境
   下载；网络受限时同样会卡住，日志页里能看到它停在 `downloading ripgrep`。
+- **"一直深度思考、没有输出"**：日志页的委托运行时日志里有每轮的进度
+  （`[turn] 会话已创建` / `[turn] 首个增量（reasoning|text）` /
+  `[turn] 本轮结束：耗时 …s，首增量 …`）。45 秒还没有任何增量时会出现一行
+  `模型 45s 内没有产生任何增量（仍在推理、或上游排队/限流）`——说明模型在
+  长时间推理或上游在排队，而不是请求没到。
+- **Zen 限流**（`Rate limit exceeded` / HTTP 429）：匿名免费层按出口与模型限流。
+  插件会在没有任何输出时自动退避重试两次（8s、25s）；仍失败则提示换模型或启用
+  IP 池自动更换出口。
 
 ## 配置
 
