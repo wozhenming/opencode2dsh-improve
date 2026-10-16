@@ -119,6 +119,29 @@ on the delegate lane's first run — `registry.npmjs.org` or `github.com` to
 fetch and verify the managed `opencode` runtime (cached under
 `~/.opencode2dsh/delegate` and reused afterwards).
 
+## First start (installed from a GitHub link)
+
+On a fresh machine the delegated runtime is usually **not** ready by the time
+the first message is sent: it downloads the ~60 MB `opencode` runtime (resumable
+across restarts), starts the service, reads the free-model catalog, and — for a
+new data directory — warms up once (Zen refuses the very first inference on a
+virgin directory, and the plugin restarts the runtime and retries by itself).
+
+- While the runtime is not ready, requests now answer with the real reason
+  instead of a timeout: `委托运行时仍在准备（正在下载 OpenCode：12.3 / 60.2 MB）……
+  请稍后重试`, or `委托运行时准备失败：<reason>`. Retry once the log shows
+  `delegated OpenCode runtime ready`.
+- To let the first message wait longer, set `delegateStartWaitMs` (milliseconds,
+  default `90000`, range `1000`–`600000`).
+- If the download is slow or rate-limited, make `HTTPS_PROXY` (or `HTTP_PROXY`)
+  visible to the **DSH process**: the plugin reads those variables and tunnels
+  itself, but a GUI-launched DSH does not inherit the system proxy.
+- With no usable route to the download sources, point
+  `OPENCODE_XDBRIDGE_RUNTIME_URL=<local tgz or internal mirror>` at a local copy
+  of the runtime archive (source probing is skipped).
+- On a small machine raise the runtime heap with
+  `OPENCODE2DSH_GOMEMLIMIT=192MiB` (default `96MiB`).
+
 ## Configuration
 
 Defaults work out of the box. Override via the profile's `cordis.patch.yml`:
@@ -142,6 +165,7 @@ Defaults work out of the box. Override via the profile's `cordis.patch.yml`:
 | `restartDelayMs` / `restartMaxDelayMs` / `maxConsecutiveCrashes` | `1000` / `60000` / `5` | Sidecar only: restart backoff and circuit breaker. |
 | `firstEventMs` / `bodyIdleMs` / `responsesBodyIdleMs` | `30000` / `120000` / `300000` | Adapter only, plugin 0.3.7+: stream-liveness watchdogs, in ms (integers from `1` to `600000`). Time to the first stream event, mid-response body silence, and the body-idle floor for Responses models (`muse-spark-*`). Increase `firstEventMs` for slow cold starts. Unset keeps the defaults; restart DSH after editing. |
 | `delegate` | `true` | This fork only: run the managed, isolated OpenCode runtime (the fix for the free-tier 403) instead of the upstream direct lane. |
+| `delegateStartWaitMs` | `90000` | This fork only: how long one request waits for the managed runtime to come up (`1000`–`600000`). While it is still downloading or prewarming, the request fails with the runtime's current status instead of a generic timeout. |
 | `delegateDataDir` | `~/.opencode2dsh/delegate` | This fork only: data directory of the managed runtime, shim and logs. |
 | `delegateBinaryPath` / `delegateRuntimeVersion` | auto-resolved / latest known | This fork only: point at a specific `opencode` binary, or pin a runtime version. |
 

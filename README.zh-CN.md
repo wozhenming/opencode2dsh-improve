@@ -110,6 +110,26 @@ dsh plugin --profile web add github:wozhenming/opencode2dsh-improve
 用于下载并校验受管的 `opencode` 运行时（缓存在 `~/.opencode2dsh/delegate`，
 之后复用）。
 
+## 首次启动（通过 GitHub 链接安装）
+
+新机器上**第一条消息发出去时，委托运行时通常还没就绪**：它要先下载约 60 MB 的
+`opencode` 运行时（支持断点续传，重启继续），再拉起服务、读取免费模型清单；
+数据目录全新时还会预热一次（Zen 对新目录的首次推理必定拒绝一次，插件会自动
+重启运行时重试）。
+
+- 运行时没就绪时，请求会得到一条明确提示而不是"请求超时"：
+  `委托运行时仍在准备（正在下载 OpenCode：12.3 / 60.2 MB）……请稍后重试`，
+  或者 `委托运行时准备失败：<原因>`。等日志出现
+  `delegated OpenCode runtime ready` 后重发即可。
+- 想让第一条消息直接等更久：配置 `delegateStartWaitMs`（毫秒，默认 `90000`，
+  范围 `1000`–`600000`）。
+- 下载慢或被限流时，把 `HTTPS_PROXY`（或 `HTTP_PROXY`）设置成 **DSH 进程能读到**
+  的环境变量——插件自己读这些变量做隧道，但 GUI 启动的 DSH 不继承系统代理设置。
+- 完全无法访问外网源时，用 `OPENCODE_XDBRIDGE_RUNTIME_URL=<本地 tgz 或内网镜像>`
+  指向一个本地运行时包（跳过探测）。
+- 内存较小的机器可用 `OPENCODE2DSH_GOMEMLIMIT=192MiB` 放宽运行时的堆上限
+  （默认 `96MiB`）。
+
 ## 配置
 
 默认配置开箱即用。需要覆盖时，编辑 profile 的 `cordis.patch.yml`：
@@ -133,6 +153,7 @@ dsh plugin --profile web add github:wozhenming/opencode2dsh-improve
 | `restartDelayMs` / `restartMaxDelayMs` / `maxConsecutiveCrashes` | `1000` / `60000` / `5` | 仅 sidecar：重启退避与熔断阈值。 |
 | `firstEventMs` / `bodyIdleMs` / `responsesBodyIdleMs` | `30000` / `120000` / `300000` | 仅 adapter，插件 0.3.7 起支持：流存活超时，单位毫秒，取 `1` 到 `600000` 的整数。分别控制首事件等待、流中静默，以及 Responses 模型（`muse-spark-*`）的静默下限。冷启动慢时可调大 `firstEventMs`。不设置则使用默认值；修改后重启 DSH。 |
 | `delegate` | `true` | 仅本分支：使用受管理的隔离 OpenCode 运行时（即免费通道 403 的修复），而不是上游直连通道。 |
+| `delegateStartWaitMs` | `90000` | 仅本分支：单个请求等待受管运行时就绪的时长（`1000`–`600000`）。仍在下载/预热时，请求会带上运行时当前状态明确报错，而不是笼统的超时。 |
 | `delegateDataDir` | `~/.opencode2dsh/delegate` | 仅本分支：受管运行时、shim 与日志的数据目录。 |
 | `delegateBinaryPath` / `delegateRuntimeVersion` | 自动解析 / 最新已知 | 仅本分支：指定 `opencode` 二进制，或固定运行时版本。 |
 
