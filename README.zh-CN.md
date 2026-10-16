@@ -121,6 +121,10 @@ dsh plugin --profile web add github:wozhenming/opencode2dsh-improve
   `委托运行时仍在准备（正在下载 OpenCode：12.3 / 60.2 MB）……请稍后重试`，
   或者 `委托运行时准备失败：<原因>`。等日志出现
   `delegated OpenCode runtime ready` 后重发即可。
+- **看不到原因就直接看页面**：**设置 → 插件 → opencode2dsh → 日志**，里面有
+  插件自身的日志、委托运行时的当前状态（准备中/失败原因），以及运行时日志
+  文件的尾部（下载进度、预热、被拒记录），支持刷新、自动刷新和一键复制，
+  把那段内容发给插件作者即可定位。
 - 想让第一条消息直接等更久：配置 `delegateStartWaitMs`（毫秒，默认 `90000`，
   范围 `1000`–`600000`）。
 - 下载慢或被限流时，把 `HTTPS_PROXY`（或 `HTTP_PROXY`）设置成 **DSH 进程能读到**

@@ -131,6 +131,11 @@ virgin directory, and the plugin restarts the runtime and retries by itself).
   instead of a timeout: `委托运行时仍在准备（正在下载 OpenCode：12.3 / 60.2 MB）……
   请稍后重试`, or `委托运行时准备失败：<reason>`. Retry once the log shows
   `delegated OpenCode runtime ready`.
+- **No more guessing where to look**: **Settings → Plugins → opencode2dsh →
+  Logs** shows this plugin's own log lines, the delegate runtime's current state
+  (preparing / failed and why), and the tail of the runtime log file (download
+  progress, prewarm, refusals), with refresh, auto-refresh and one-click copy —
+  paste it into an issue and the cause is on the page.
 - To let the first message wait longer, set `delegateStartWaitMs` (milliseconds,
   default `90000`, range `1000`–`600000`).
 - If the download is slow or rate-limited, make `HTTPS_PROXY` (or `HTTP_PROXY`)
