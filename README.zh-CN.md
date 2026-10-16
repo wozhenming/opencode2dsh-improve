@@ -133,6 +133,9 @@ dsh plugin --profile web add github:wozhenming/opencode2dsh-improve
   指向一个本地运行时包（跳过探测）。
 - 内存较小的机器可用 `OPENCODE2DSH_GOMEMLIMIT=192MiB` 放宽运行时的堆上限
   （默认 `96MiB`）。
+- 运行时**首次**启动还会从 GitHub 下载它自己的文件搜索工具
+  （`BurntSushi/ripgrep`，日志里会出现 `downloading ripgrep`）。这是第二处跨境
+  下载；网络受限时同样会卡住，日志页里能看到它停在 `downloading ripgrep`。
 
 ## 配置
 

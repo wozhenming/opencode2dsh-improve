@@ -146,6 +146,10 @@ virgin directory, and the plugin restarts the runtime and retries by itself).
   of the runtime archive (source probing is skipped).
 - On a small machine raise the runtime heap with
   `OPENCODE2DSH_GOMEMLIMIT=192MiB` (default `96MiB`).
+- The runtime's **first** start also pulls its own file-search binary from
+  GitHub (`BurntSushi/ripgrep`, visible as `downloading ripgrep` in the log).
+  That is the second cross-border download; a restricted network stalls there
+  the same way, and the log page shows it stuck on `downloading ripgrep`.
 
 ## Configuration
 
