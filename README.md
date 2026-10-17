@@ -135,7 +135,10 @@ virgin directory, and the plugin restarts the runtime and retries by itself).
   Logs** shows this plugin's own log lines, the delegate runtime's current state
   (preparing / failed and why), and the tail of the runtime log file (download
   progress, prewarm, refusals), with refresh, auto-refresh and one-click copy —
-  paste it into an issue and the cause is on the page.
+  paste it into an issue and the cause is on the page. To start a reproduction
+  from a clean slate, **Clear logs** asks first and then empties both the
+  in-memory ring and `opencode.log` (truncating works even while the delegate
+  holds its append handle, verified on Windows).
 - To let the first message wait longer, set `delegateStartWaitMs` (milliseconds,
   default `90000`, range `1000`–`600000`).
 - If the download is slow or rate-limited, make `HTTPS_PROXY` (or `HTTP_PROXY`)
