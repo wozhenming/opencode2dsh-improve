@@ -104,6 +104,21 @@ dsh plugin --profile web add github:wozhenming/opencode2dsh-improve
 **验证**：重启 DSH，打开模型选择器，在 **opencode2dsh** 分组里选模型即可
 （本分支不改 provider id）。
 
+**这一步是必须的**：插件只负责"当被选中时把请求交给受管的 `opencode` 运行时"，
+它不会替你改模型选择。如果会话仍在用 DSH 默认模型或其它 provider，请求根本不会
+到达本插件（症状是：日志里没有 `收到模型请求`）。除了在选择器里手动选，也可以在
+profile 的 `cordis.patch.yml` 里固定（desktop profile 适用）：
+
+```yaml
+- id: agent-default-model
+  name: "@deepseek-ai/dsh-agent-default-model"
+  config:
+    provider: opencode2dsh
+    model: deepseek-v4.1-flash-free
+```
+
+运行时已就绪 5 分钟仍未收到任何请求时，插件会在日志里主动提醒这一点。
+
 需要 DSH（DeepSeek Harness）0.1.7 及以上、带 web profile（IP 池设置页依赖 0.1.7
 的插件页契约）；Node.js ≥ 20（DSH 能跑就满足）；出站 HTTPS 需可达 `opencode.ai`
 与 `models.dev`；委托通道首次运行还需可达 `registry.npmjs.org` 或 `github.com`，
