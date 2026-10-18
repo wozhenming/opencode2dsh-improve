@@ -206,8 +206,19 @@ DSH 的原生压缩（`compaction-basic`）藏在 `preset-standard` 的嵌套
 升级改了 roster（例如 2026-10-18 那次把 persona 的 `{{cwd}}` 变量删了），快照
 必须重刷，否则会出现 `unknown prompt variable "{{cwd}}"` 这类报错。
 
-用仓库里的脚本一键重刷（它会从 app.asar 重新提取 `standard.patch.yml`、
-重建快照、套回两处修改、替换 profile 的 `cordis.patch.yml`，幂等）：
+**在 DSH 内部重刷**：日志页（**设置 → 插件 → opencode2dsh → 日志**）上的
+**"检查并更新 preset"** 按钮——它会从当前运行的 app.asar 重新提取
+`standard.patch.yml`、重建快照、套回两处修改、替换 profile 的
+`cordis.patch.yml`，幂等；roster 没变时无需重启。设置卡片上也有同一个按钮。
+两者都会报告 `CHANGED`（roster 变了，需要重启 DSH）或 `unchanged`（快照仍与
+当前一致）；失败时会把堆栈、asar 路径、DSH home 写进日志页，而不是静默吞掉。
+
+按钮在 DSH 的 Electron 宿主里通过被修补的 fs 直接按 `<asar>/<内部路径>`
+读取 `resources/app.asar` 里的 preset（与宿主自身加载模块同一条路）；手工解析
+归档只是纯 Node 的回退路径（下面的 CLI 脚本用的就是它）。
+
+或者用仓库里的脚本一键重刷（同样的结果，手工解析直接读归档，因此也可以在
+DSH 宿主之外运行）：
 
 ```sh
 node scripts/refresh-preset.mjs            # 默认 profile=desktop
@@ -215,8 +226,8 @@ node scripts/refresh-preset.mjs --profile web
 node scripts/refresh-preset.mjs --dry-run  # 只报告是否有变化，不写入
 ```
 
-每次 DSH 升级后跑一次；输出 `CHANGED` 就说明 roster 变了、需要重启 DSH 生效；
-输出 `unchanged` 表示快照仍与当前 DSH 一致。
+两种方式任选其一，每次 DSH 升级后跑一次；输出 `CHANGED` 就说明 roster 变了、
+需要重启 DSH 生效；输出 `unchanged` 表示快照仍与当前 DSH 一致。
 
 ## 工作原理
 

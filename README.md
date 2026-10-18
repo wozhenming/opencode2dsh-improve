@@ -212,9 +212,22 @@ and every other field*). This fork therefore ships a **full snapshot** of
 2026-10-18 update dropped `{{cwd}}` from the persona suffix), the snapshot must
 be refreshed or prompt building fails with `unknown prompt variable "{{cwd}}"`.
 
-Refresh it in one command with the repo's script (re-extracts
-`standard.patch.yml` from the app, rebuilds the snapshot, re-applies the two
-edits, and rewrites the profile's `cordis.patch.yml`; idempotent):
+Refresh it **from inside DSH** with the log page's **"Check for updates"**
+button (**Settings → Plugins → opencode2dsh → Logs**): it re-extracts
+`standard.patch.yml` from the running app, rebuilds the snapshot, re-applies the
+two edits, and rewrites the profile's `cordis.patch.yml` — idempotent, no
+restart needed when the roster has not moved. The same button lives on the
+plugin's settings card; both report `CHANGED` (roster moved — restart DSH) or
+`unchanged` (snapshot already matches), and write failures — stack, asar path,
+DSH home — are surfaced on the log page instead of dying silently.
+
+The button works in DSH's Electron host by reading the preset straight out of
+`resources/app.asar` through the patched filesystem (`<asar>/<inner path>`), the
+same route the host itself loads its modules by; the manual archive parse is
+only the plain-Node fallback (the CLI script below uses it).
+
+Or refresh it in one command with the repo's script (same result; the manual
+parse reads the archive directly, so it also runs outside the DSH host):
 
 ```sh
 node scripts/refresh-preset.mjs            # default profile=desktop
@@ -222,8 +235,8 @@ node scripts/refresh-preset.mjs --profile web
 node scripts/refresh-preset.mjs --dry-run  # report only, no write
 ```
 
-Run it after every DSH upgrade: `CHANGED` means the roster moved and DSH needs a
-restart; `unchanged` means the snapshot still matches the current DSH.
+Run either after every DSH upgrade: `CHANGED` means the roster moved and DSH
+needs a restart; `unchanged` means the snapshot still matches the current DSH.
 
 ## How it works
 
