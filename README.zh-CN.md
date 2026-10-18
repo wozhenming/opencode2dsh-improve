@@ -142,6 +142,12 @@ profile 的 `cordis.patch.yml` 里固定（desktop profile 适用）：
   把那段内容发给插件作者即可定位。若要重新复现一个问题，日志页上的
   **清除日志** 会先确认、再清空插件日志环形缓冲与 `opencode.log`（运行时仍持有
   追加句柄，截断在 Windows 上也有效），清空后的页面只显示新问题。
+- **登录 OpenCode 账号（脱离匿名限流）**：日志页上有一个"登录 OpenCode"输入框，
+  在 <https://opencode.ai/auth> 创建 API Key 粘贴进去即可。插件会把该条目写入
+  本机 `auth.json`（`~/.local/share/opencode/auth.json`，独立 `opencode` CLI 也
+  会读到）和委托运行时的凭据文件；委托运行时每轮新建会话时都会重新读取，所以
+  **下一轮请求即生效，无需重启**。匿名免费层按出口 IP × 模型限流，登录后走账号
+  配额更稳定。
 - 想让第一条消息直接等更久：配置 `delegateStartWaitMs`（毫秒，默认 `90000`，
   范围 `1000`–`600000`）。
 - 下载慢或被限流时，把 `HTTPS_PROXY`（或 `HTTP_PROXY`）设置成 **DSH 进程能读到**

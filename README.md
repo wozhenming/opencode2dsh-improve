@@ -139,6 +139,14 @@ virgin directory, and the plugin restarts the runtime and retries by itself).
   from a clean slate, **Clear logs** asks first and then empties both the
   in-memory ring and `opencode.log` (truncating works even while the delegate
   holds its append handle, verified on Windows).
+- **Login an OpenCode account (escape the anonymous rate limits)**: the log page
+  has a "Login OpenCode" field — create an API key at
+  <https://opencode.ai/auth> and paste it in. The plugin writes the entry to the
+  host `auth.json` (`~/.local/share/opencode/auth.json`, which a standalone
+  `opencode` CLI also reads) and to the delegate runtime's credential file; the
+  runtime re-reads the store on every session creation, so the **next turn uses
+  it with no restart**. The anonymous free tier is limited per exit IP × model;
+  an account quota is steadier.
 - To let the first message wait longer, set `delegateStartWaitMs` (milliseconds,
   default `90000`, range `1000`–`600000`).
 - If the download is slow or rate-limited, make `HTTPS_PROXY` (or `HTTP_PROXY`)
