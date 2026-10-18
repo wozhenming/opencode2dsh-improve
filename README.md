@@ -199,6 +199,32 @@ Defaults work out of the box. Override via the profile's `cordis.patch.yml`:
 | `delegateDataDir` | `~/.opencode2dsh/delegate` | This fork only: data directory of the managed runtime, shim and logs. |
 | `delegateBinaryPath` / `delegateRuntimeVersion` | auto-resolved / latest known | This fork only: point at a specific `opencode` binary, or pin a runtime version. |
 
+## Compaction conflict handling (preset-standard snapshot & upgrades)
+
+DSH's native condensation (`compaction-basic`) lives inside the nested
+`compaction` group of `preset-standard`, and DSH's patch engine replaces a
+matched row's `config` WHOLESALE — there is no by-id deep merge (the plugin's own
+docs: *the override replaces the complete `config`, so restate `id`, `plugins`
+and every other field*). This fork therefore ships a **full snapshot** of
+`preset-standard` with `auto: false` on `compaction-basic` and the manual
+`/compact` disabled, so billion-context stays the only compressor. The cost is a
+**frozen roster**: after any DSH upgrade that changes the preset (e.g. the
+2026-10-18 update dropped `{{cwd}}` from the persona suffix), the snapshot must
+be refreshed or prompt building fails with `unknown prompt variable "{{cwd}}"`.
+
+Refresh it in one command with the repo's script (re-extracts
+`standard.patch.yml` from the app, rebuilds the snapshot, re-applies the two
+edits, and rewrites the profile's `cordis.patch.yml`; idempotent):
+
+```sh
+node scripts/refresh-preset.mjs            # default profile=desktop
+node scripts/refresh-preset.mjs --profile web
+node scripts/refresh-preset.mjs --dry-run  # report only, no write
+```
+
+Run it after every DSH upgrade: `CHANGED` means the roster moved and DSH needs a
+restart; `unchanged` means the snapshot still matches the current DSH.
+
 ## How it works
 
 ```

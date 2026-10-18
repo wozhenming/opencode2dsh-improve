@@ -195,6 +195,29 @@ profile 的 `cordis.patch.yml` 里固定（desktop profile 适用）：
 | `delegateDataDir` | `~/.opencode2dsh/delegate` | 仅本分支：受管运行时、shim 与日志的数据目录。 |
 | `delegateBinaryPath` / `delegateRuntimeVersion` | 自动解析 / 最新已知 | 仅本分支：指定 `opencode` 二进制，或固定运行时版本。 |
 
+## 压缩冲突处理（preset-standard 快照与升级刷新）
+
+DSH 的原生压缩（`compaction-basic`）藏在 `preset-standard` 的嵌套
+`compaction` 组里，而 DSH 的 patch 引擎对命中行是**整块替换 `config`**、不做
+按 id 深合并（官方文档：*The override replaces the complete `config`, so restate
+`id`, `plugins` and every other field*）。所以本分支以**整份快照**覆盖
+`preset-standard`，把 `compaction-basic` 设为 `auto: false`、并禁用手动
+`/compact`，让 billion-context 成为唯一压缩器。代价是**名单冻结**：每次 DSH
+升级改了 roster（例如 2026-10-18 那次把 persona 的 `{{cwd}}` 变量删了），快照
+必须重刷，否则会出现 `unknown prompt variable "{{cwd}}"` 这类报错。
+
+用仓库里的脚本一键重刷（它会从 app.asar 重新提取 `standard.patch.yml`、
+重建快照、套回两处修改、替换 profile 的 `cordis.patch.yml`，幂等）：
+
+```sh
+node scripts/refresh-preset.mjs            # 默认 profile=desktop
+node scripts/refresh-preset.mjs --profile web
+node scripts/refresh-preset.mjs --dry-run  # 只报告是否有变化，不写入
+```
+
+每次 DSH 升级后跑一次；输出 `CHANGED` 就说明 roster 变了、需要重启 DSH 生效；
+输出 `unchanged` 表示快照仍与当前 DSH 一致。
+
 ## 工作原理
 
 ```
